@@ -27,7 +27,8 @@ var cheerio = require('cheerio');
 var rest = require('restler');
 var util = require('util');
 
-var HTMLFILE_DEFAULT = "index.html";
+//var HTMLFILE_DEFAULT = "index.html";
+var HTMLFILE_DEFAULT = "index_2.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 var URL_DEFAULT = "http://www.google.com";
 
@@ -40,8 +41,21 @@ var assertFileExists = function(infile) {
     return instr;
 };
 
+var assertURLExists = function(infile) {
+    var instr = infile.toString();
+    if(!fs.existsSync(instr)) {
+        console.log("%s does not exist. Exiting.", instr);
+        //process.exit(1); // http://nodejs.org/api/process.html#process_process_exit_code                                                                                                                                                   
+    }
+    return instr;
+};
+
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
+};
+
+var cheerioUrlFile = function(htmlfile) {
+    return cheerio.load(htmlfile);
 };
 
 var loadChecks = function(checksfile) {
@@ -59,19 +73,56 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
+var checkUrlFile = function(htmlfile, checksfile) {
+    $ = cheerioUrlFile(htmlfile);
+    var checks = loadChecks(checksfile).sort();
+    var out = {};
+    for(var ii in checks) {
+        var present = $(checks[ii]).length > 0;
+        out[checks[ii]] = present;
+    }
+    return out;
+};
+
 var clone = function(fn) {
     // Workaround for commander.js issue.
     // http://stackoverflow.com/a/6772648
     return fn.bind({});
 };
 
-var buildfn = function(url, data) {
+var buildfn = function() {
     var response2console = function(result, response) {
         if (result instanceof Error) {
             console.error('Error: ' + util.format(response.message));
         } else {
-            console.error("Wrote %s", url);
-            fs.writeFileSync(csvfile, result)
+            //console.error("Wrote %s", data);
+            //fs.writeFileSync(csvfile, result)
+            //var dumHTMLFile = cheerio.load(response);
+            //var checkJson = checkHtmlFile(dumHTMLFile, program.checks);
+
+            var checkJson = checkUrlFile(result, program.checks);
+            var outJson = JSON.stringify(checkJson, null, 4);
+            console.log(outJson);
+
+
+            /*
+            var dumHTMLFile = fs.writeFile('message.txt', result, function (err) {
+              if (err) 
+                {
+                  throw err;
+                  console.log('Error thrown!\n');
+                }
+              var checkJson = checkHtmlFile('message.txt', program.checks);
+              var outJson = JSON.stringify(checkJson, null, 4);
+              console.log(outJson);
+              console.log('It\'s saved!');
+              });
+
+            */
+
+            //var checkJson = checkHtmlFile('message.txt', program.checks);
+            //var outJson = JSON.stringify(checkJson, null, 4);
+            //console.log(outJson);
         }
     };
     return response2console;
@@ -81,21 +132,43 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
-        .option('-u, --url <url_adress>', 'The URL to show the application', URL_DEFAULT)
+        .option('-u, --url <url_adress>', 'The URL to show the application', undefined)
         .parse(process.argv);
     
+
+    // print process.argv
+    process.argv.forEach(function (val, index, array) {
+      console.log(index + ': ' + val);
+    });
+
+    //var htmlInput = 4;
+    console.log("\nprogram.url is %s", program.url);
+
     // Check if a URL has been given as an argument
-    if(!program.url == URL_DEFAULT) 
-    {
+    if((program.url === undefined))  {
+
+      var htmlInput = program.file;
+      //program.url = "CHANGED!";                                                                                                                                                                                                          
+      //console.log("\nURL is " + program.url);                                                                                                                                                                                            
+      console.log("\nhtmlInput is %s", htmlInput.toString());
+      var checkJson = checkHtmlFile(program.file, program.checks);
+      var outJson = JSON.stringify(checkJson, null, 4);
+      console.log(outJson);
+     }
+    else {
       console.log("\nURL is " + program.url);
-      var response2console = buildfn(url, data);
-      rest.get(apiurl).on('complete', response2console);
-      var htmlInput = rest.get(program.url).on('complete', response2console);
+      var response2console = buildfn();
+      rest.get(program.url).on('complete', response2console);
+      //htmlInput = rest.get(program.url).on('complete', response2console);                                                                                                                                                                
     }
-    else {var htmlInput = program.file;}
+
+
+   
+    /*
     var checkJson = checkHtmlFile(htmlInput, program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
+    */
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }

@@ -29,7 +29,6 @@ var util = require('util');
 
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
-var URL_DEFAULT = "http://www.google.com";
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -89,25 +88,14 @@ if(require.main == module) {
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-u, --url <url_adress>', 'The URL to show the application', undefined)
         .parse(process.argv);
-    
-
-    // print process.argv
-    process.argv.forEach(function (val, index, array) {
-      console.log(index + ': ' + val);
-    });
 
     // Check if a URL has been given as an argument
     if(program.url === undefined)  {
-
-      var htmlInput = program.file;                                                                                                                                                      
-      //console.log("\nURL is " + program.url);                                                                                                                                                                                            
-      console.log("\nhtmlInput is %s", htmlInput.toString());
       var checkJson = checkCheerioFile(cheerioHtmlFile(program.file), program.checks);
       var outJson = JSON.stringify(checkJson, null, 4);
       console.log(outJson);
      }
     else {
-      console.log("\nURL is " + program.url);
       var response2console = buildfn();
       rest.get(program.url).on('complete', response2console);  
     }

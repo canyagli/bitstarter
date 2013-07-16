@@ -9,7 +9,7 @@ app.get('/', function(request, response) {
   response.send(fs.readFileSync(index_file).toString());
   //response.send('Hello World 2!');
 });
-
+//listen on port 8080
 var port = process.env.PORT || 8080;
 app.listen(port, function() {
   console.log("Listening on " + port);
